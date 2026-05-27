@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -497,9 +498,79 @@ const DEFAULTS = {
 };
 
 // ══════════════════════════════════════════
-//  LOCALSTORAGE
+//  SUPABASE + LOCALSTORAGE SYNC
 // ══════════════════════════════════════════
-function loadState() {
+const SUPABASE_URL = 'https://eeeuhwwuwjpfhuirtkok.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlZXVod3d1d2pwZmh1aXJ0a29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTY2MzQsImV4cCI6MjA5NTQ3MjYzNH0.kstVkNqGOXTEv2m7M-F4T8dxfR6ZQ0wXrWAGNIOTJvY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Debounce so we don't hammer the DB on every keystroke
+let _saveTimer = null;
+function saveState() {
+  // Always save locally first (instant, works offline)
+  try { localStorage.setItem('apexos_state', JSON.stringify(S)); } catch(e) {}
+  showSaveIndicator('saving');
+  // Debounce cloud save by 800ms
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      await sb.from('apex_state').upsert({ id: 'main', data: S, updated_at: new Date().toISOString() });
+      showSaveIndicator('saved');
+    } catch(e) {
+      showSaveIndicator('offline');
+    }
+  }, 800);
+}
+
+function showSaveIndicator(status) {
+  const el = document.getElementById('saveIndicator');
+  if (status === 'saving') {
+    el.textContent = '↑ Syncing…';
+    el.style.background = 'var(--amber)';
+  } else if (status === 'saved') {
+    el.textContent = '✓ Saved';
+    el.style.background = 'var(--green)';
+  } else {
+    el.textContent = '● Offline';
+    el.style.background = 'var(--text2)';
+  }
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+async function loadStateFromCloud() {
+  // Start with local state immediately so app feels instant
+  let local = {};
+  try {
+    const saved = localStorage.getItem('apexos_state');
+    if (saved) local = JSON.parse(saved);
+  } catch(e) {}
+
+  // Then try to pull from Supabase
+  try {
+    const { data, error } = await sb.from('apex_state').select('data, updated_at').eq('id', 'main').single();
+    if (!error && data && data.data && Object.keys(data.data).length > 0) {
+      // Use cloud data if it exists
+      const cloud = data.data;
+      // Pick whichever was updated more recently
+      const localTime = local.updatedAt ? new Date(local.updatedAt) : new Date(0);
+      const cloudTime = data.updated_at ? new Date(data.updated_at) : new Date(0);
+      if (cloudTime >= localTime) {
+        S = Object.assign({}, DEFAULTS, cloud);
+        // Also update localStorage with cloud data
+        try { localStorage.setItem('apexos_state', JSON.stringify(S)); } catch(e) {}
+        // Re-render everything with cloud data
+        renderAll();
+        showSaveIndicator('saved');
+        return;
+      }
+    }
+  } catch(e) {
+    // Offline — local state already loaded, that's fine
+  }
+}
+
+function loadStateLocal() {
   try {
     const saved = localStorage.getItem('apexos_state');
     if (saved) {
@@ -510,20 +581,29 @@ function loadState() {
   return Object.assign({}, DEFAULTS);
 }
 
-function saveState() {
-  try {
-    localStorage.setItem('apexos_state', JSON.stringify(S));
-    showSaveIndicator();
-  } catch(e) {}
-}
+let S = loadStateLocal();
 
-function showSaveIndicator() {
-  const el = document.getElementById('saveIndicator');
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 1500);
+function renderAll() {
+  checkDailyReset();
+  document.getElementById('greetingName').textContent = S.name;
+  document.getElementById('pomoCount').textContent = S.pomoCount;
+  renderPhoto();
+  renderPriorities();
+  renderTransactions();
+  renderBudgets();
+  renderHabits();
+  renderTasks();
+  renderMeals();
+  renderGoals();
+  renderNotes();
+  updateFinanceTotals();
+  updateNutritionTotals();
+  updateDailyScore();
+  applyLock();
+  updateCharts();
+  const wc = document.getElementById('waterCount'); if(wc) wc.textContent=`${S.waterCups} / 8 cups`;
+  const wb = document.getElementById('waterBar'); if(wb) wb.style.width=Math.min(100,Math.round(S.waterCups/8*100))+'%';
 }
-
-let S = loadState();
 
 // Auto-reset habits daily
 function checkDailyReset() {
@@ -1188,9 +1268,10 @@ function init() {
   applyLock();
   updatePomoDisplay();
   initCharts();
-  // Water display
   const wc=document.getElementById('waterCount'); if(wc) wc.textContent=`${S.waterCups} / 8 cups`;
   const wb=document.getElementById('waterBar'); if(wb) wb.style.width=Math.min(100,Math.round(S.waterCups/8*100))+'%';
+  // Pull latest from cloud in background — updates UI if cloud is newer
+  loadStateFromCloud();
 }
 
 init();
