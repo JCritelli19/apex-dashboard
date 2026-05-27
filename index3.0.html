@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--bg4:#22222e;
+  --border:#2a2a38;--border2:#3a3a4e;
+  --text:#f0f0f8;--text2:#9090b0;
+  --accent:#6c63ff;--accent2:#ff6584;
+  --green:#22d3a0;--amber:#f59e0b;--blue:#38bdf8;
+  --red:#f87171;--pink:#f472b6;--r:10px;--r2:16px;
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* NAV */
+.nav{display:flex;align-items:center;gap:4px;padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;overflow-x:auto;flex-wrap:nowrap}
+.nav-brand{font-weight:700;font-size:18px;letter-spacing:.05em;color:var(--accent);white-space:nowrap;margin-right:16px}
+.nav-brand span{color:var(--text)}
+.tab{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);border:none;background:none;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:6px;font-family:'Space Grotesk',sans-serif}
+.tab:hover{background:var(--bg3);color:var(--text)}
+.tab.active{background:var(--accent);color:#fff}
+.tab i{font-size:15px}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.lock-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .2s;font-family:'Space Grotesk',sans-serif;white-space:nowrap}
+.lock-btn:hover{border-color:var(--accent);color:var(--accent)}
+.lock-btn.locked{border-color:var(--red);color:var(--red);background:rgba(248,113,113,.08)}
+
+/* LAYOUT */
+.page{display:none;padding:20px;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid-home{display:grid;grid-template-columns:320px 1fr 280px;gap:16px;align-items:start}
+@media(max-width:1100px){.grid-home{grid-template-columns:1fr 1fr}.col3{display:none}}
+@media(max-width:700px){.grid-home,.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px;position:relative;overflow:hidden}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase}
+.card-action{font-size:12px;color:var(--accent);cursor:pointer;opacity:.8;background:none;border:none;font-family:'Space Grotesk',sans-serif}
+.card-action:hover{opacity:1}
+
+/* PROFILE */
+.profile-card{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border:1px solid rgba(108,99,255,.3)}
+.greeting{font-size:20px;font-weight:700;margin:10px 0 4px}
+.greeting .name{color:var(--accent)}
+.quote{font-size:12px;color:var(--text2);line-height:1.6;font-style:italic;border-left:2px solid var(--accent);padding-left:10px;margin-top:12px}
+.datetime-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.dt-chip{font-size:11px;background:rgba(255,255,255,.06);padding:4px 10px;border-radius:20px;color:var(--text2)}
+
+/* STATS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--bg3);border-radius:var(--r);padding:14px;border:1px solid var(--border)}
+.stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono'}
+.stat-sub{font-size:11px;margin-top:3px}
+.green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.pink{color:var(--pink)}.accent{color:var(--accent)}
+
+/* PROGRESS */
+.prog-wrap{margin-bottom:10px}
+.prog-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px}
+.prog-bar{height:6px;background:var(--bg4);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .6s ease}
+
+/* HABITS */
+.habit-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.habit-item:last-child{border-bottom:none}
+.habit-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;background:none}
+.habit-check.done{background:var(--green);border-color:var(--green)}
+.habit-check.done::after{content:'✓';font-size:13px;color:#000;font-weight:700}
+.habit-name{flex:1;font-size:14px}
+.habit-streak{font-size:12px;color:var(--amber);font-family:'JetBrains Mono'}
+.habit-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;opacity:.4;padding:2px 6px}
+.habit-del:hover{opacity:1;color:var(--red)}
+
+/* TASKS */
+.task-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.task-item:last-child{border-bottom:none}
+.task-cb{width:18px;height:18px;border-radius:50%;border:2px solid var(--border2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;background:none}
+.task-cb.done{background:var(--accent);border-color:var(--accent)}
+.task-cb.done::after{content:'✓';font-size:10px;color:#fff}
+.task-text{flex:1;font-size:13px}
+.task-text.done{text-decoration:line-through;color:var(--text2)}
+.task-tag{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600}
+.tag-work{background:rgba(56,189,248,.15);color:var(--blue)}
+.tag-health{background:rgba(34,211,160,.15);color:var(--green)}
+.tag-personal{background:rgba(244,114,182,.15);color:var(--pink)}
+.tag-finance{background:rgba(245,158,11,.15);color:var(--amber)}
+.task-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;opacity:.4}
+.task-del:hover{opacity:1;color:var(--red)}
+
+/* POMODORO */
+.pomo-ring{position:relative;width:160px;height:160px;margin:0 auto}
+.pomo-ring svg{transform:rotate(-90deg)}
+.pomo-time{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.pomo-mins{font-size:32px;font-weight:700;font-family:'JetBrains Mono';line-height:1}
+.pomo-label{font-size:11px;color:var(--text2);margin-top:4px}
+.pomo-controls{display:flex;justify-content:center;gap:10px;margin-top:14px}
+.pomo-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+.pomo-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pomo-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.pomo-mode-btns{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
+.pomo-mode-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .2s}
+.pomo-mode-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* NUTRITION */
+.macro-circle{display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;margin:12px 0}
+.macro-item{text-align:center}
+.macro-val{font-size:18px;font-weight:700;font-family:'JetBrains Mono'}
+.macro-lbl{font-size:11px;color:var(--text2);margin-top:2px}
+.meal-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.meal-item:last-child{border-bottom:none}
+.meal-cals{margin-left:auto;font-family:'JetBrains Mono';font-size:12px;color:var(--text2)}
+.meal-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;opacity:.4}
+.meal-del:hover{opacity:1;color:var(--red)}
+
+/* FINANCE */
+.fin-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.fin-row:last-child{border-bottom:none}
+.fin-amount{font-family:'JetBrains Mono';font-weight:600}
+.fin-cat{font-size:11px;color:var(--text2);margin-top:2px}
+.fin-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;opacity:.4}
+.fin-del:hover{opacity:1;color:var(--red)}
+
+/* LOCKED OVERLAY */
+.fin-locked{position:absolute;inset:0;background:rgba(10,10,15,.92);z-index:10;display:flex;align-items:center;justify-content:center;border-radius:var(--r2);backdrop-filter:blur(6px);flex-direction:column;gap:8px}
+.fin-locked i{font-size:32px;color:var(--text2)}
+.fin-locked p{font-size:13px;color:var(--text2)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:380px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:18px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.input-group{margin-bottom:14px}
+.input-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.input-group input,.input-group select,.input-group textarea{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:14px;font-family:'Space Grotesk',sans-serif;outline:none;transition:border .2s}
+.input-group input:focus,.input-group select:focus,.input-group textarea:focus{border-color:var(--accent)}
+.input-group textarea{resize:vertical;min-height:80px}
+.btn{padding:10px 20px;border-radius:var(--r);border:none;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+/* PHOTO */
+.photo-wrap{width:72px;height:72px;border-radius:50%;border:2px solid var(--accent);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--accent);overflow:hidden;cursor:pointer;flex-shrink:0}
+.photo-wrap img{width:100%;height:100%;object-fit:cover}
+
+/* SCORE */
+.score-circle{width:80px;height:80px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto}
+.score-num{font-size:24px;font-weight:700;font-family:'JetBrains Mono';color:var(--accent)}
+.score-lbl{font-size:10px;color:var(--text2)}
+
+/* MISC */
+.chart-wrap{position:relative;width:100%}
+.add-btn{width:100%;padding:8px;border:1px dashed var(--border2);border-radius:var(--r);background:none;color:var(--text2);cursor:pointer;font-size:12px;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:'Space Grotesk',sans-serif}
+.add-btn:hover{border-color:var(--accent);color:var(--accent)}
+.section-header{display:flex;align-items:center;gap:10px;margin:24px 0 16px}
+.section-header h2{font-size:20px;font-weight:700}
+.section-header .badge{font-size:11px;background:var(--bg3);border:1px solid var(--border);padding:3px 10px;border-radius:20px;color:var(--text2)}
+.priority-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.priority-item:last-child{border-bottom:none}
+.priority-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.note-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;resize:none;outline:none;min-height:80px}
+.note-input:focus{border-color:var(--accent)}
+.save-indicator{position:fixed;bottom:20px;right:20px;background:var(--green);color:#000;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
+.save-indicator.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="save-indicator" id="saveIndicator">✓ Saved</div>
+
+<nav class="nav">
+  <div class="nav-brand">APEX<span>OS</span></div>
+  <button class="tab active" onclick="showPage('home',this)"><i class="ti ti-layout-dashboard"></i>Home</button>
+  <button class="tab" onclick="showPage('finance',this)"><i class="ti ti-coins"></i>Finance</button>
+  <button class="tab" onclick="showPage('habits',this)"><i class="ti ti-flame"></i>Habits</button>
+  <button class="tab" onclick="showPage('nutrition',this)"><i class="ti ti-salad"></i>Nutrition</button>
+  <button class="tab" onclick="showPage('tasks',this)"><i class="ti ti-checklist"></i>Tasks</button>
+  <button class="tab" onclick="showPage('notes',this)"><i class="ti ti-notes"></i>Notes</button>
+  <div class="nav-right">
+    <button class="lock-btn" id="lockBtn" onclick="toggleLock()"><i class="ti ti-lock-open" id="lockIcon"></i><span id="lockText">Lock Finance</span></button>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="grid-home">
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Profile -->
+      <div class="card profile-card">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="photo-wrap" id="photoWrap" onclick="document.getElementById('photoInput').click()">
+            <i class="ti ti-camera" id="photoIcon"></i>
+            <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="loadPhoto(event)">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em" id="greetingLabel">Good morning</div>
+            <div class="greeting">Hey, <span class="name" id="greetingName">Friend</span></div>
+          </div>
+        </div>
+        <div class="quote" id="quoteBox">Loading…</div>
+        <div class="datetime-row">
+          <span class="dt-chip" id="dateChip">—</span>
+          <span class="dt-chip" id="timeChip">—</span>
+        </div>
+        <button class="add-btn" style="margin-top:10px" onclick="openEditProfile()"><i class="ti ti-edit"></i>Edit Profile</button>
+      </div>
+
+      <!-- Pomodoro -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Pomodoro Timer</span></div>
+        <div class="pomo-mode-btns">
+          <button class="pomo-mode-btn active" onclick="setPomoMode(25,'Focus',this)">Focus</button>
+          <button class="pomo-mode-btn" onclick="setPomoMode(5,'Short Break',this)">Short</button>
+          <button class="pomo-mode-btn" onclick="setPomoMode(15,'Long Break',this)">Long</button>
+        </div>
+        <div class="pomo-ring">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="70" fill="none" stroke="#1a1a24" stroke-width="8"/>
+            <circle id="pomoProgress" cx="80" cy="80" r="70" fill="none" stroke="#6c63ff" stroke-width="8"
+              stroke-dasharray="439.8" stroke-dashoffset="0" stroke-linecap="round" style="transition:stroke-dashoffset .5s"/>
+          </svg>
+          <div class="pomo-time">
+            <div class="pomo-mins mono" id="pomoDisplay">25:00</div>
+            <div class="pomo-label" id="pomoLabel">Focus</div>
+          </div>
+        </div>
+        <div class="pomo-controls">
+          <button class="pomo-btn" onclick="resetPomo()"><i class="ti ti-player-skip-back"></i></button>
+          <button class="pomo-btn primary" onclick="togglePomo()"><i id="pomoIcon" class="ti ti-player-play"></i></button>
+          <button class="pomo-btn" onclick="skipPomo()"><i class="ti ti-player-skip-forward"></i></button>
+        </div>
+        <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text2)">Sessions today: <span class="mono green" id="pomoCount">0</span></div>
+      </div>
+
+      <!-- Daily Score -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Daily Score</span></div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div class="score-circle"><span class="score-num" id="dailyScore">0</span><span class="score-lbl">/ 100</span></div>
+          <div style="flex:1">
+            <div class="prog-wrap"><div class="prog-label"><span>Habits</span><span id="scoreHabits" class="green">0/0</span></div><div class="prog-bar"><div class="prog-fill" id="scoreHabitsBar" style="width:0%;background:var(--green)"></div></div></div>
+            <div class="prog-wrap"><div class="prog-label"><span>Tasks</span><span id="scoreTasks" class="blue">0/0</span></div><div class="prog-bar"><div class="prog-fill" id="scoreTasksBar" style="width:0%;background:var(--blue)"></div></div></div>
+            <div class="prog-wrap"><div class="prog-label"><span>Nutrition</span><span id="scoreNut" class="amber">0%</span></div><div class="prog-bar"><div class="prog-fill" id="scoreNutBar" style="width:0%;background:var(--amber)"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL 2 -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="stat-row">
+        <div class="stat"><div class="stat-label">Net Worth</div><div class="stat-val green" id="hw-networth">$0</div><div class="stat-sub" style="color:var(--text2)">total balance</div></div>
+        <div class="stat"><div class="stat-label">Calories Left</div><div class="stat-val amber" id="hw-cals">—</div><div class="stat-sub" style="color:var(--text2)">of daily goal</div></div>
+        <div class="stat"><div class="stat-label">Habit Streak</div><div class="stat-val accent" id="hw-streak">0</div><div class="stat-sub" style="color:var(--text2)">days running</div></div>
+        <div class="stat"><div class="stat-label">Budget Left</div><div class="stat-val blue" id="hw-budget">—</div><div class="stat-sub" style="color:var(--text2)">this month</div></div>
+      </div>
+
+      <!-- Cashflow chart -->
+      <div class="card" style="position:relative">
+        <div class="card-header"><span class="card-title">Monthly Cashflow</span></div>
+        <div id="finLock0" class="fin-locked" style="display:none"><i class="ti ti-lock"></i><p>Finance locked</p></div>
+        <div class="chart-wrap" style="height:180px"><canvas id="cashflowChart"></canvas></div>
+      </div>
+
+      <!-- Top Priorities -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Top Priorities Today</span><button class="card-action" onclick="openEditPriorities()">Edit</button></div>
+        <div id="priorityList">
+          <div class="priority-item"><div class="priority-num">1</div><div class="priority-text" id="p1">Add your top priority</div></div>
+          <div class="priority-item"><div class="priority-num">2</div><div class="priority-text" id="p2">Add your second priority</div></div>
+          <div class="priority-item"><div class="priority-num">3</div><div class="priority-text" id="p3">Add your third priority</div></div>
+        </div>
+      </div>
+
+      <!-- Today Tasks -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Tasks Due Today</span><button class="card-action" onclick="showPage('tasks',document.querySelectorAll('.tab')[5])">All →</button></div>
+        <div id="homeTaskList"></div>
+        <button class="add-btn" onclick="openAddTask()"><i class="ti ti-plus"></i>Add task</button>
+      </div>
+    </div>
+
+    <!-- COL 3 -->
+    <div class="col3" style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Habits Today</span><button class="card-action" onclick="showPage('habits',document.querySelectorAll('.tab')[3])">All →</button></div>
+        <div id="homeHabitList"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Nutrition</span><button class="card-action" onclick="showPage('nutrition',document.querySelectorAll('.tab')[4])">Log →</button></div>
+        <div id="homeNutrition"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Quick Capture</span></div>
+        <textarea class="note-input" id="quickNote" placeholder="Brain dump anything…"></textarea>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;font-size:12px" onclick="saveQuickNote()">Save Note</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCE -->
+<div id="page-finance" class="page">
+  <div class="section-header"><h2>Finance</h2><span class="badge" id="finMonth">—</span></div>
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="stat"><div class="stat-label">Total Income</div><div class="stat-val green" id="fin-income">$0</div></div>
+    <div class="stat"><div class="stat-label">Total Expenses</div><div class="stat-val red" id="fin-expense">$0</div></div>
+    <div class="stat"><div class="stat-label">Savings</div><div class="stat-val blue" id="fin-savings">$0</div></div>
+    <div class="stat"><div class="stat-label">Net Worth</div><div class="stat-val accent" id="fin-networth2">$0</div></div>
+  </div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card" style="position:relative">
+      <div id="finLock1" class="fin-locked" style="display:none"><i class="ti ti-lock"></i><p>Finance locked</p></div>
+      <div class="card-header"><span class="card-title">Expense Breakdown</span></div>
+      <div class="chart-wrap" style="height:240px"><canvas id="expenseChart"></canvas></div>
+    </div>
+    <div class="card" style="position:relative">
+      <div id="finLock2" class="fin-locked" style="display:none"><i class="ti ti-lock"></i><p>Finance locked</p></div>
+      <div class="card-header"><span class="card-title">Income vs Expenses</span></div>
+      <div class="chart-wrap" style="height:240px"><canvas id="monthlyChart"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card" style="position:relative">
+      <div id="finLock3" class="fin-locked" style="display:none"><i class="ti ti-lock"></i><p>Finance locked</p></div>
+      <div class="card-header"><span class="card-title">Transactions</span><button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddTransaction()">+ Add</button></div>
+      <div id="transactionList"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Budget Goals</span><button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddBudget()">+ Add</button></div>
+      <div id="budgetGoals"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HABITS -->
+<div id="page-habits" class="page">
+  <div class="section-header"><h2>Habits & Goals</h2></div>
+  <div class="grid-3">
+    <div class="card" style="grid-column:span 2">
+      <div class="card-header"><span class="card-title">Today's Habits</span><button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddHabit()">+ Add Habit</button></div>
+      <div id="fullHabitList"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Streak Overview</span></div>
+      <div id="streakOverview"></div>
+    </div>
+  </div>
+  <div style="margin-top:16px" class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Habit Consistency (7 days)</span></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="habitChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Goals</span><button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddGoal()">+ Add Goal</button></div>
+      <div id="goalsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NUTRITION -->
+<div id="page-nutrition" class="page">
+  <div class="section-header"><h2>Nutrition Tracker</h2></div>
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="stat"><div class="stat-label">Calories</div><div class="stat-val amber" id="nut-cals">0</div><div class="stat-sub" style="color:var(--text2)" id="nut-cals-goal">Goal: 2000</div></div>
+    <div class="stat"><div class="stat-label">Protein</div><div class="stat-val green" id="nut-protein">0g</div><div class="stat-sub" style="color:var(--text2)" id="nut-p-goal">Goal: 150g</div></div>
+    <div class="stat"><div class="stat-label">Carbs</div><div class="stat-val blue" id="nut-carbs">0g</div><div class="stat-sub" style="color:var(--text2)" id="nut-c-goal">Goal: 200g</div></div>
+    <div class="stat"><div class="stat-label">Fat</div><div class="stat-val pink" id="nut-fat">0g</div><div class="stat-sub" style="color:var(--text2)" id="nut-f-goal">Goal: 65g</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Today's Meals</span><button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddMeal()">+ Log Meal</button></div>
+      <div id="mealList"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Macro Progress</span><button class="card-action" onclick="openNutritionGoals()">Set Goals</button></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="macroChart"></canvas></div>
+      <div style="margin-top:16px">
+        <div class="prog-wrap"><div class="prog-label"><span>Water</span><span id="waterCount">0 / 8 cups</span></div><div class="prog-bar"><div class="prog-fill" id="waterBar" style="width:0%;background:var(--blue)"></div></div></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="addWater(-1)">− Cup</button>
+          <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="addWater(1)">+ Cup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TASKS -->
+<div id="page-tasks" class="page">
+  <div class="section-header"><h2>Tasks & Projects</h2></div>
+  <div class="grid-3">
+    <div class="card" style="grid-column:span 2">
+      <div class="card-header"><span class="card-title">All Tasks</span><button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddTask()">+ Add Task</button></div>
+      <div id="fullTaskList"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">By Category</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="taskChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTES -->
+<div id="page-notes" class="page">
+  <div class="section-header"><h2>Notes & Ideas</h2></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">New Note</span></div>
+      <div class="input-group"><label>Title</label><input type="text" id="noteTitleInput" placeholder="Note title…"></div>
+      <div class="input-group"><label>Category</label>
+        <select id="noteCatInput">
+          <option>📋 General</option><option>🍽 Food</option><option>💼 Work</option>
+          <option>💡 Ideas</option><option>🔬 Research</option><option>📅 Meeting</option>
+        </select>
+      </div>
+      <div class="input-group"><label>Content</label><textarea id="noteContent" placeholder="Write your note…" style="min-height:120px"></textarea></div>
+      <button class="btn btn-primary" style="width:100%" onclick="saveNote()">Save Note</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Saved Notes</span></div>
+      <div id="notesList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalOverlay" class="overlay" style="display:none" onclick="handleOverlayClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="modalTitle"></h3>
+    <div id="modalBody"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modalSubmit">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  DEFAULT STATE
+// ══════════════════════════════════════════
+const DEFAULTS = {
+  name: 'Friend',
+  photoURL: null,
+  locked: false,
+  waterCups: 0,
+  pomoCount: 0,
+  priorities: ['Complete your top priority', 'Add your second priority', 'Add your third priority'],
+  transactions: [],
+  budgets: [
+    {id:1, name:'Housing', spent:0, limit:1400},
+    {id:2, name:'Food', spent:0, limit:500},
+    {id:3, name:'Transport', spent:0, limit:300},
+  ],
+  habits: [
+    {id:1, name:'Morning Workout', done:false, streak:0},
+    {id:2, name:'Meditation', done:false, streak:0},
+    {id:3, name:'Read 30 min', done:false, streak:0},
+    {id:4, name:'8 Cups Water', done:false, streak:0},
+  ],
+  tasks: [
+    {id:1, text:'Welcome to APEX OS! Check off this task.', done:false, tag:'personal', due:'today'},
+  ],
+  meals: [],
+  nutGoals: {cals:2000, protein:150, carbs:200, fat:65},
+  goals: [
+    {id:1, text:'Build a healthy daily routine', progress:10, type:'Health'},
+    {id:2, text:'Save for emergency fund', progress:5, type:'Finance'},
+  ],
+  notes: [],
+  habitHistory: [[5],[6],[5],[7],[6],[4],[6]],
+  lastResetDate: new Date().toDateString(),
+};
+
+// ══════════════════════════════════════════
+//  LOCALSTORAGE
+// ══════════════════════════════════════════
+function loadState() {
+  try {
+    const saved = localStorage.getItem('apexos_state');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return Object.assign({}, DEFAULTS, parsed);
+    }
+  } catch(e) {}
+  return Object.assign({}, DEFAULTS);
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('apexos_state', JSON.stringify(S));
+    showSaveIndicator();
+  } catch(e) {}
+}
+
+function showSaveIndicator() {
+  const el = document.getElementById('saveIndicator');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1500);
+}
+
+let S = loadState();
+
+// Auto-reset habits daily
+function checkDailyReset() {
+  const today = new Date().toDateString();
+  if (S.lastResetDate !== today) {
+    // Push yesterday's habit count to history
+    const doneCnt = S.habits.filter(h => h.done).length;
+    S.habitHistory.push([doneCnt]);
+    if (S.habitHistory.length > 7) S.habitHistory.shift();
+    S.habits.forEach(h => { h.done = false; });
+    S.meals = [];
+    S.waterCups = 0;
+    S.lastResetDate = today;
+    saveState();
+  }
+}
+
+// ══════════════════════════════════════════
+//  QUOTES
+// ══════════════════════════════════════════
+const QUOTES = [
+  "The secret of getting ahead is getting started. — Mark Twain",
+  "Small daily improvements are the key to staggering long-term results.",
+  "You don't have to be great to start, but you have to start to be great.",
+  "Discipline is choosing between what you want now and what you want most.",
+  "What gets measured gets managed. — Peter Drucker",
+  "The chains of habit are too light to be felt until they're too heavy to be broken.",
+  "Success is the sum of small efforts repeated day in and day out.",
+];
+
+// ══════════════════════════════════════════
+//  CLOCK
+// ══════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours();
+  const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greetingLabel').textContent = greeting;
+  document.getElementById('dateChip').textContent = now.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('timeChip').textContent = now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+}
+
+// ══════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  LOCK
+// ══════════════════════════════════════════
+function toggleLock() {
+  S.locked = !S.locked;
+  applyLock();
+  saveState();
+}
+function applyLock() {
+  const ids = ['finLock0','finLock1','finLock2','finLock3'];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = S.locked ? 'flex' : 'none'; });
+  const btn = document.getElementById('lockBtn');
+  document.getElementById('lockIcon').className = S.locked ? 'ti ti-lock' : 'ti ti-lock-open';
+  document.getElementById('lockText').textContent = S.locked ? 'Unlock Finance' : 'Lock Finance';
+  btn.classList.toggle('locked', S.locked);
+}
+
+// ══════════════════════════════════════════
+//  PHOTO
+// ══════════════════════════════════════════
+function loadPhoto(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    S.photoURL = ev.target.result;
+    renderPhoto();
+    saveState();
+  };
+  r.readAsDataURL(f);
+}
+function renderPhoto() {
+  const wrap = document.getElementById('photoWrap');
+  if (S.photoURL) {
+    wrap.innerHTML = `<img src="${S.photoURL}" alt="Profile photo"><input type="file" id="photoInput" accept="image/*" style="display:none" onchange="loadPhoto(event)">`;
+    wrap.onclick = () => document.getElementById('photoInput').click();
+  } else {
+    wrap.innerHTML = `<i class="ti ti-camera" id="photoIcon"></i><input type="file" id="photoInput" accept="image/*" style="display:none" onchange="loadPhoto(event)">`;
+    wrap.onclick = () => document.getElementById('photoInput').click();
+  }
+}
+
+// ══════════════════════════════════════════
+//  POMODORO
+// ══════════════════════════════════════════
+let pomoState = { mode:25, label:'Focus', seconds:25*60, total:25*60, running:false, interval:null };
+
+function setPomoMode(mins, label, btn) {
+  clearInterval(pomoState.interval); pomoState.running = false;
+  pomoState = { mode:mins, label:label, seconds:mins*60, total:mins*60, running:false, interval:null };
+  document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('pomoIcon').className = 'ti ti-player-play';
+  updatePomoDisplay();
+}
+function togglePomo() {
+  if (pomoState.running) {
+    clearInterval(pomoState.interval); pomoState.running = false;
+    document.getElementById('pomoIcon').className = 'ti ti-player-play';
+  } else {
+    pomoState.running = true;
+    document.getElementById('pomoIcon').className = 'ti ti-player-pause';
+    pomoState.interval = setInterval(() => {
+      pomoState.seconds--;
+      if (pomoState.seconds <= 0) {
+        clearInterval(pomoState.interval); pomoState.running = false;
+        if (pomoState.label === 'Focus') { S.pomoCount++; saveState(); document.getElementById('pomoCount').textContent = S.pomoCount; }
+        pomoState.seconds = 0;
+        document.getElementById('pomoIcon').className = 'ti ti-player-play';
+      }
+      updatePomoDisplay();
+    }, 1000);
+  }
+}
+function resetPomo() { clearInterval(pomoState.interval); pomoState.running = false; pomoState.seconds = pomoState.mode*60; pomoState.total = pomoState.mode*60; document.getElementById('pomoIcon').className = 'ti ti-player-play'; updatePomoDisplay(); }
+function skipPomo() { clearInterval(pomoState.interval); pomoState.running = false; pomoState.seconds = 0; document.getElementById('pomoIcon').className = 'ti ti-player-play'; updatePomoDisplay(); }
+function updatePomoDisplay() {
+  const m = Math.floor(pomoState.seconds/60), s = pomoState.seconds % 60;
+  document.getElementById('pomoDisplay').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('pomoLabel').textContent = pomoState.label;
+  const pct = pomoState.seconds / pomoState.total;
+  document.getElementById('pomoProgress').style.strokeDashoffset = String(439.8 * (1 - pct));
+  const colors = { 'Focus':'#6c63ff', 'Short Break':'#22d3a0', 'Long Break':'#38bdf8' };
+  document.getElementById('pomoProgress').style.stroke = colors[pomoState.label] || '#6c63ff';
+}
+
+// ══════════════════════════════════════════
+//  FINANCE
+// ══════════════════════════════════════════
+function renderTransactions() {
+  const el = document.getElementById('transactionList'); if (!el) return;
+  if (!S.transactions.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">No transactions yet — click + Add</div>'; return; }
+  el.innerHTML = [...S.transactions].reverse().slice(0,10).map(t => `
+    <div class="fin-row">
+      <div><div style="font-weight:500">${t.desc}</div><div class="fin-cat">${t.cat} · ${t.date}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="fin-amount ${t.type==='income'?'green':'red'}">${t.type==='income'?'+':'-'}$${Number(t.amount).toLocaleString()}</div>
+        <button class="fin-del" onclick="deleteTransaction(${t.id})"><i class="ti ti-x"></i></button>
+      </div>
+    </div>`).join('');
+}
+function deleteTransaction(id) { S.transactions = S.transactions.filter(t => t.id !== id); saveState(); renderTransactions(); updateFinanceTotals(); updateCharts(); }
+
+function updateFinanceTotals() {
+  const income = S.transactions.filter(t => t.type==='income').reduce((a,t) => a+Number(t.amount), 0);
+  const expense = S.transactions.filter(t => t.type==='expense').reduce((a,t) => a+Number(t.amount), 0);
+  const savings = income - expense;
+  const setEl = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+  setEl('fin-income', '$' + income.toLocaleString());
+  setEl('fin-expense', '$' + expense.toLocaleString());
+  setEl('fin-savings', '$' + savings.toLocaleString());
+  setEl('fin-networth2', '$' + income.toLocaleString());
+  setEl('hw-networth', '$' + savings.toLocaleString());
+  setEl('hw-budget', '$' + Math.max(0, savings).toLocaleString());
+  const mo = new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+  const mb = document.getElementById('finMonth'); if(mb) mb.textContent = mo;
+}
+
+function renderBudgets() {
+  const el = document.getElementById('budgetGoals'); if (!el) return;
+  if (!S.budgets.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">No budgets yet</div>'; return; }
+  el.innerHTML = S.budgets.map(b => {
+    const pct = Math.min(100, Math.round(b.spent/b.limit*100));
+    const color = pct > 90 ? 'var(--red)' : pct > 70 ? 'var(--amber)' : 'var(--green)';
+    return `<div class="prog-wrap">
+      <div class="prog-label"><span>${b.name}</span><span>$${b.spent} / $${b.limit}</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  HABITS
+// ══════════════════════════════════════════
+function renderHabits() {
+  ['homeHabitList','fullHabitList'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    if (!S.habits.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">No habits yet</div>'; return; }
+    el.innerHTML = S.habits.map(h => `
+      <div class="habit-item">
+        <button class="habit-check ${h.done?'done':''}" onclick="toggleHabit(${h.id})"></button>
+        <span class="habit-name">${h.name}</span>
+        <span class="habit-streak">🔥${h.streak}</span>
+        ${id==='fullHabitList'?`<button class="habit-del" onclick="deleteHabit(${h.id})"><i class="ti ti-x"></i></button>`:''}
+      </div>`).join('');
+  });
+  const so = document.getElementById('streakOverview');
+  if (so) so.innerHTML = S.habits.map(h => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span>${h.name}</span><span class="mono amber">🔥 ${h.streak} days</span>
+    </div>`).join('');
+  updateDailyScore();
+}
+function toggleHabit(id) {
+  const h = S.habits.find(x => x.id===id); if (!h) return;
+  h.done = !h.done;
+  h.streak = h.done ? h.streak+1 : Math.max(0,h.streak-1);
+  saveState(); renderHabits(); updateDailyScore();
+}
+function deleteHabit(id) { S.habits = S.habits.filter(h => h.id!==id); saveState(); renderHabits(); }
+function getTopStreak() { return S.habits.length ? Math.max(...S.habits.map(h=>h.streak)) : 0; }
+
+// ══════════════════════════════════════════
+//  TASKS
+// ══════════════════════════════════════════
+function renderTasks() {
+  const todayTasks = S.tasks.filter(t => t.due==='today');
+  const home = document.getElementById('homeTaskList');
+  if (home) {
+    if (!todayTasks.length) { home.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:10px 0">No tasks today — add one below</div>'; }
+    else home.innerHTML = todayTasks.map(t => taskHTML(t, false)).join('');
+  }
+  const full = document.getElementById('fullTaskList');
+  if (full) {
+    if (!S.tasks.length) { full.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">No tasks yet</div>'; }
+    else full.innerHTML = S.tasks.map(t => taskHTML(t, true)).join('');
+  }
+  updateDailyScore();
+}
+function taskHTML(t, showDue) {
+  return `<div class="task-item">
+    <button class="task-cb ${t.done?'done':''}" onclick="toggleTask(${t.id})"></button>
+    <span class="task-text ${t.done?'done':''}">${t.text}</span>
+    ${showDue?`<span style="margin-left:auto;margin-right:8px;font-size:11px;color:var(--text2)">${t.due}</span>`:''}
+    <span class="task-tag tag-${t.tag}">${t.tag}</span>
+    <button class="task-del" onclick="deleteTask(${t.id})"><i class="ti ti-x"></i></button>
+  </div>`;
+}
+function toggleTask(id) { const t = S.tasks.find(x=>x.id===id); if(t){ t.done=!t.done; saveState(); renderTasks(); } }
+function deleteTask(id) { S.tasks = S.tasks.filter(t=>t.id!==id); saveState(); renderTasks(); }
+
+// ══════════════════════════════════════════
+//  MEALS
+// ══════════════════════════════════════════
+function renderMeals() {
+  const el = document.getElementById('mealList'); if (!el) return;
+  if (!S.meals.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">No meals logged yet</div>'; }
+  else el.innerHTML = S.meals.map(m => `
+    <div class="meal-item">
+      <div><div style="font-weight:500">${m.name}</div><div style="font-size:11px;color:var(--text2)">${m.meal} · P:${m.protein}g C:${m.carbs}g F:${m.fat}g</div></div>
+      <div class="meal-cals">${m.cals} kcal</div>
+      <button class="meal-del" onclick="deleteMeal(${m.id})"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+  updateNutritionTotals();
+}
+function deleteMeal(id) { S.meals = S.meals.filter(m=>m.id!==id); saveState(); renderMeals(); updateCharts(); }
+
+function updateNutritionTotals() {
+  const totCals = S.meals.reduce((a,m)=>a+Number(m.cals),0);
+  const totP = S.meals.reduce((a,m)=>a+Number(m.protein),0);
+  const totC = S.meals.reduce((a,m)=>a+Number(m.carbs),0);
+  const totF = S.meals.reduce((a,m)=>a+Number(m.fat),0);
+  const g = S.nutGoals;
+  const setEl = (id,val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
+  setEl('nut-cals', totCals.toLocaleString());
+  setEl('nut-protein', totP+'g');
+  setEl('nut-carbs', totC+'g');
+  setEl('nut-fat', totF+'g');
+  setEl('nut-cals-goal','Goal: '+g.cals);
+  setEl('nut-p-goal','Goal: '+g.protein+'g');
+  setEl('nut-c-goal','Goal: '+g.carbs+'g');
+  setEl('nut-f-goal','Goal: '+g.fat+'g');
+  const left = Math.max(0, g.cals - totCals);
+  setEl('hw-cals', left.toLocaleString());
+
+  // Home nutrition summary
+  const hn = document.getElementById('homeNutrition');
+  if (hn) {
+    const calPct = Math.min(100,Math.round(totCals/g.cals*100));
+    const pPct = Math.min(100,Math.round(totP/g.protein*100));
+    hn.innerHTML = `
+      <div class="prog-wrap"><div class="prog-label"><span>Calories</span><span>${totCals} / ${g.cals}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${calPct}%;background:var(--amber)"></div></div></div>
+      <div class="prog-wrap"><div class="prog-label"><span>Protein</span><span>${totP}g / ${g.protein}g</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pPct}%;background:var(--green)"></div></div></div>
+      <div class="prog-wrap"><div class="prog-label"><span>Water</span><span>${S.waterCups} / 8 cups</span></div><div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,Math.round(S.waterCups/8*100))}%;background:var(--blue)"></div></div></div>`;
+  }
+}
+
+function addWater(delta) {
+  S.waterCups = Math.max(0, Math.min(12, S.waterCups + delta));
+  const pct = Math.min(100, Math.round(S.waterCups/8*100));
+  const wc = document.getElementById('waterCount'); if(wc) wc.textContent = `${S.waterCups} / 8 cups`;
+  const wb = document.getElementById('waterBar'); if(wb) wb.style.width = pct+'%';
+  saveState(); updateNutritionTotals();
+}
+
+// ══════════════════════════════════════════
+//  GOALS
+// ══════════════════════════════════════════
+function renderGoals() {
+  const el = document.getElementById('goalsList'); if (!el) return;
+  if (!S.goals.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">No goals yet</div>'; return; }
+  el.innerHTML = S.goals.map(g => `
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:500">${g.text}</span>
+        <button class="task-del" onclick="deleteGoal(${g.id})"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${g.progress}%;background:var(--accent)"></div></div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">${g.progress}% · ${g.type}</div>
+    </div>`).join('');
+}
+function deleteGoal(id) { S.goals = S.goals.filter(g=>g.id!==id); saveState(); renderGoals(); }
+
+// ══════════════════════════════════════════
+//  NOTES
+// ══════════════════════════════════════════
+function saveNote() {
+  const title = document.getElementById('noteTitleInput').value;
+  const cat = document.getElementById('noteCatInput').value;
+  const content = document.getElementById('noteContent').value;
+  if (!content.trim()) return;
+  S.notes.unshift({id:Date.now(), title:title||'Untitled', cat, content, date:new Date().toLocaleDateString()});
+  document.getElementById('noteTitleInput').value='';
+  document.getElementById('noteContent').value='';
+  saveState(); renderNotes();
+}
+function saveQuickNote() {
+  const content = document.getElementById('quickNote').value;
+  if (!content.trim()) return;
+  S.notes.unshift({id:Date.now(), title:'Quick Note', cat:'📋 General', content, date:new Date().toLocaleDateString()});
+  document.getElementById('quickNote').value='';
+  saveState(); renderNotes();
+}
+function renderNotes() {
+  const el = document.getElementById('notesList'); if (!el) return;
+  if (!S.notes.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">No notes yet</div>'; return; }
+  el.innerHTML = S.notes.map(n => `
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-weight:600;font-size:13px">${n.title}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--text2)">${n.cat} · ${n.date}</span>
+          <button class="task-del" onclick="deleteNote(${n.id})"><i class="ti ti-x"></i></button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">${n.content.substring(0,120)}${n.content.length>120?'…':''}</div>
+    </div>`).join('');
+}
+function deleteNote(id) { S.notes = S.notes.filter(n=>n.id!==id); saveState(); renderNotes(); }
+
+// ══════════════════════════════════════════
+//  DAILY SCORE
+// ══════════════════════════════════════════
+function updateDailyScore() {
+  const habits = S.habits;
+  const todayTasks = S.tasks.filter(t=>t.due==='today');
+  const habitsDone = habits.filter(h=>h.done).length;
+  const tasksDone = todayTasks.filter(t=>t.done).length;
+  const habitPct = habits.length ? habitsDone/habits.length : 0;
+  const taskPct = todayTasks.length ? tasksDone/todayTasks.length : 0;
+  const totCals = S.meals.reduce((a,m)=>a+Number(m.cals),0);
+  const nutPct = S.nutGoals.cals ? Math.min(1, totCals/S.nutGoals.cals) : 0;
+  const score = Math.round(habitPct*40 + taskPct*40 + nutPct*20);
+  const setEl = (id,val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
+  setEl('dailyScore', score);
+  setEl('scoreHabits', `${habitsDone}/${habits.length}`);
+  setEl('scoreTasks', `${tasksDone}/${todayTasks.length}`);
+  setEl('scoreNut', Math.round(nutPct*100)+'%');
+  const sb = document.getElementById('scoreHabitsBar'); if(sb) sb.style.width=Math.round(habitPct*100)+'%';
+  const tb = document.getElementById('scoreTasksBar'); if(tb) tb.style.width=Math.round(taskPct*100)+'%';
+  const nb = document.getElementById('scoreNutBar'); if(nb) nb.style.width=Math.round(nutPct*100)+'%';
+  setEl('hw-streak', getTopStreak());
+}
+
+// ══════════════════════════════════════════
+//  PRIORITIES
+// ══════════════════════════════════════════
+function renderPriorities() {
+  ['p1','p2','p3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if (el && S.priorities[i]) el.textContent = S.priorities[i];
+  });
+}
+
+// ══════════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════════
+let charts = {};
+function initCharts() {
+  setTimeout(() => {
+    buildCashflowChart();
+    buildExpenseChart();
+    buildMonthlyChart();
+    buildHabitChart();
+    buildMacroChart();
+    buildTaskChart();
+  }, 400);
+}
+
+function buildCashflowChart() {
+  const ctx = document.getElementById('cashflowChart'); if(!ctx) return;
+  if(charts.cashflow) charts.cashflow.destroy();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  const labels = [];
+  const incData = [];
+  const expData = [];
+  for(let i=4;i>=0;i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    labels.push(months[d.getMonth()]);
+    const moInc = S.transactions.filter(t=>t.type==='income'&&new Date(t.rawDate||Date.now()).getMonth()===d.getMonth()).reduce((a,t)=>a+Number(t.amount),0);
+    const moExp = S.transactions.filter(t=>t.type==='expense'&&new Date(t.rawDate||Date.now()).getMonth()===d.getMonth()).reduce((a,t)=>a+Number(t.amount),0);
+    incData.push(moInc); expData.push(moExp);
+  }
+  charts.cashflow = new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {label:'Income',data:incData,backgroundColor:'rgba(34,211,160,.7)',borderRadius:4},
+    {label:'Expenses',data:expData,backgroundColor:'rgba(248,113,113,.7)',borderRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10}}},
+            y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10},callback:v=>'$'+v}}}}});
+}
+
+function buildExpenseChart() {
+  const ctx = document.getElementById('expenseChart'); if(!ctx) return;
+  if(charts.expense) charts.expense.destroy();
+  const cats = {}; S.transactions.filter(t=>t.type==='expense').forEach(t=>{ cats[t.cat]=(cats[t.cat]||0)+Number(t.amount); });
+  const labels = Object.keys(cats); const data = Object.values(cats);
+  if(!data.length){cats['No data']=1; labels.push('No data'); data.push(1);}
+  const colors = ['#6c63ff','#22d3a0','#38bdf8','#f472b6','#f59e0b','#f87171','#a78bfa','#34d399'];
+  charts.expense = new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors.slice(0,data.length),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9090b0',font:{size:10},boxWidth:10}}},cutout:'65%'}});
+}
+
+function buildMonthlyChart() {
+  const ctx = document.getElementById('monthlyChart'); if(!ctx) return;
+  if(charts.monthly) charts.monthly.destroy();
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now=new Date(); const labels=[]; const incData=[]; const expData=[];
+  for(let i=4;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    labels.push(months[d.getMonth()]);
+    incData.push(S.transactions.filter(t=>t.type==='income'&&new Date(t.rawDate||Date.now()).getMonth()===d.getMonth()).reduce((a,t)=>a+Number(t.amount),0));
+    expData.push(S.transactions.filter(t=>t.type==='expense'&&new Date(t.rawDate||Date.now()).getMonth()===d.getMonth()).reduce((a,t)=>a+Number(t.amount),0));
+  }
+  charts.monthly = new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Income',data:incData,borderColor:'#22d3a0',backgroundColor:'rgba(34,211,160,.08)',tension:.4,fill:true},
+    {label:'Expenses',data:expData,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.08)',tension:.4,fill:true}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10}}},
+            y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10},callback:v=>'$'+v}}}}});
+}
+
+function buildHabitChart() {
+  const ctx = document.getElementById('habitChart'); if(!ctx) return;
+  if(charts.habit) charts.habit.destroy();
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const data = S.habitHistory.map(d=>Array.isArray(d)?d[0]:d);
+  while(data.length<7) data.unshift(0);
+  charts.habit = new Chart(ctx,{type:'bar',data:{labels:days,datasets:[{label:'Done',data:data.slice(-7),backgroundColor:'rgba(108,99,255,.7)',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10}}},
+              y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10}},max:S.habits.length||8}}}});
+}
+
+function buildMacroChart() {
+  const ctx = document.getElementById('macroChart'); if(!ctx) return;
+  if(charts.macro) charts.macro.destroy();
+  const g = S.nutGoals;
+  const totCals=S.meals.reduce((a,m)=>a+Number(m.cals),0);
+  const totP=S.meals.reduce((a,m)=>a+Number(m.protein),0);
+  const totC=S.meals.reduce((a,m)=>a+Number(m.carbs),0);
+  const totF=S.meals.reduce((a,m)=>a+Number(m.fat),0);
+  charts.macro = new Chart(ctx,{type:'bar',data:{labels:['Calories','Protein','Carbs','Fat'],
+    datasets:[
+      {label:'Current',data:[totCals,totP,totC,totF],backgroundColor:['rgba(245,158,11,.8)','rgba(34,211,160,.8)','rgba(56,189,248,.8)','rgba(244,114,182,.8)'],borderRadius:4},
+      {label:'Goal',data:[g.cals,g.protein,g.carbs,g.fat],backgroundColor:['rgba(245,158,11,.2)','rgba(34,211,160,.2)','rgba(56,189,248,.2)','rgba(244,114,182,.2)'],borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10}}},
+              y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9090b0',font:{size:10}}}}}});
+}
+
+function buildTaskChart() {
+  const ctx = document.getElementById('taskChart'); if(!ctx) return;
+  if(charts.task) charts.task.destroy();
+  const cats={work:0,health:0,personal:0,finance:0};
+  S.tasks.forEach(t=>{ if(cats[t.tag]!==undefined) cats[t.tag]++; });
+  charts.task = new Chart(ctx,{type:'doughnut',data:{labels:['Work','Health','Personal','Finance'],
+    datasets:[{data:[cats.work,cats.health,cats.personal,cats.finance],backgroundColor:['#38bdf8','#22d3a0','#f472b6','#f59e0b'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9090b0',font:{size:11},boxWidth:10}}},cutout:'60%'}});
+}
+
+function updateCharts() {
+  buildCashflowChart(); buildExpenseChart(); buildMonthlyChart(); buildMacroChart(); buildTaskChart();
+}
+
+// ══════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════
+let modalCB = null;
+function openModal(title, body, cb) {
+  document.getElementById('modalTitle').innerHTML = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalOverlay').style.display = 'flex';
+  modalCB = cb;
+  document.getElementById('modalSubmit').onclick = () => { if(modalCB) modalCB(); closeModal(); };
+}
+function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+function handleOverlayClick(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+function openEditProfile() {
+  openModal('<i class="ti ti-user"></i> Edit Profile',`
+    <div class="input-group"><label>Your Name</label><input type="text" id="m-name" value="${S.name}"></div>
+    <div class="input-group"><label>Photo</label><p style="font-size:12px;color:var(--text2);margin-top:4px">Click the photo circle on your dashboard to upload an image.</p></div>
+  `, () => {
+    const n = document.getElementById('m-name').value.trim();
+    if(n) { S.name=n; document.getElementById('greetingName').textContent=n; saveState(); }
+  });
+}
+
+function openEditPriorities() {
+  openModal('<i class="ti ti-list-numbers"></i> Edit Priorities',`
+    <div class="input-group"><label>Priority 1</label><input type="text" id="m-p1" value="${S.priorities[0]||''}"></div>
+    <div class="input-group"><label>Priority 2</label><input type="text" id="m-p2" value="${S.priorities[1]||''}"></div>
+    <div class="input-group"><label>Priority 3</label><input type="text" id="m-p3" value="${S.priorities[2]||''}"></div>
+  `, () => {
+    S.priorities[0]=document.getElementById('m-p1').value||S.priorities[0];
+    S.priorities[1]=document.getElementById('m-p2').value||S.priorities[1];
+    S.priorities[2]=document.getElementById('m-p3').value||S.priorities[2];
+    saveState(); renderPriorities();
+  });
+}
+
+function openAddTransaction() {
+  openModal('<i class="ti ti-plus"></i> Add Transaction',`
+    <div class="input-group"><label>Description</label><input type="text" id="m-desc" placeholder="e.g. Salary, Groceries…"></div>
+    <div class="input-group"><label>Amount ($)</label><input type="number" id="m-amount" placeholder="0.00" min="0"></div>
+    <div class="input-group"><label>Type</label><select id="m-type"><option value="income">Income</option><option value="expense">Expense</option></select></div>
+    <div class="input-group"><label>Category</label><select id="m-cat"><option>Income</option><option>Housing</option><option>Food</option><option>Transport</option><option>Health</option><option>Entertainment</option><option>Subscriptions</option><option>Savings</option><option>Other</option></select></div>
+  `, () => {
+    const desc=document.getElementById('m-desc').value.trim();
+    const amount=parseFloat(document.getElementById('m-amount').value);
+    const type=document.getElementById('m-type').value;
+    const cat=document.getElementById('m-cat').value;
+    if(!desc||!amount) return;
+    S.transactions.push({id:Date.now(),desc,amount,type,cat,date:new Date().toLocaleDateString(),rawDate:new Date().toISOString()});
+    saveState(); renderTransactions(); updateFinanceTotals(); updateCharts();
+  });
+}
+
+function openAddBudget() {
+  openModal('<i class="ti ti-target"></i> Add Budget',`
+    <div class="input-group"><label>Category Name</label><input type="text" id="m-bname" placeholder="e.g. Housing, Food…"></div>
+    <div class="input-group"><label>Monthly Limit ($)</label><input type="number" id="m-blimit" placeholder="500" min="0"></div>
+    <div class="input-group"><label>Current Spent ($)</label><input type="number" id="m-bspent" placeholder="0" min="0"></div>
+  `, () => {
+    const name=document.getElementById('m-bname').value.trim();
+    const limit=parseFloat(document.getElementById('m-blimit').value)||0;
+    const spent=parseFloat(document.getElementById('m-bspent').value)||0;
+    if(!name) return;
+    S.budgets.push({id:Date.now(),name,limit,spent});
+    saveState(); renderBudgets();
+  });
+}
+
+function openAddTask() {
+  openModal('<i class="ti ti-plus"></i> Add Task',`
+    <div class="input-group"><label>Task</label><input type="text" id="m-task" placeholder="What needs to be done?"></div>
+    <div class="input-group"><label>Category</label><select id="m-ttag"><option value="work">Work</option><option value="health">Health</option><option value="personal">Personal</option><option value="finance">Finance</option></select></div>
+    <div class="input-group"><label>Due</label><select id="m-due"><option value="today">Today</option><option value="tomorrow">Tomorrow</option><option value="this week">This week</option><option value="someday">Someday</option></select></div>
+  `, () => {
+    const text=document.getElementById('m-task').value.trim();
+    if(!text) return;
+    S.tasks.push({id:Date.now(),text,tag:document.getElementById('m-ttag').value,due:document.getElementById('m-due').value,done:false});
+    saveState(); renderTasks(); updateCharts();
+  });
+}
+
+function openAddHabit() {
+  openModal('<i class="ti ti-flame"></i> Add Habit',`
+    <div class="input-group"><label>Habit Name</label><input type="text" id="m-habit" placeholder="e.g. Morning run, Journaling…"></div>
+  `, () => {
+    const name=document.getElementById('m-habit').value.trim();
+    if(!name) return;
+    S.habits.push({id:Date.now(),name,done:false,streak:0});
+    saveState(); renderHabits(); buildHabitChart();
+  });
+}
+
+function openAddGoal() {
+  openModal('<i class="ti ti-target"></i> Add Goal',`
+    <div class="input-group"><label>Goal</label><input type="text" id="m-goal" placeholder="What do you want to achieve?"></div>
+    <div class="input-group"><label>Type</label><select id="m-gtype"><option>Health</option><option>Finance</option><option>Learning</option><option>Work</option><option>Personal</option></select></div>
+    <div class="input-group"><label>Progress (%)</label><input type="number" id="m-gprog" value="0" min="0" max="100"></div>
+  `, () => {
+    const text=document.getElementById('m-goal').value.trim();
+    if(!text) return;
+    S.goals.push({id:Date.now(),text,type:document.getElementById('m-gtype').value,progress:parseInt(document.getElementById('m-gprog').value)||0});
+    saveState(); renderGoals();
+  });
+}
+
+function openAddMeal() {
+  openModal('<i class="ti ti-salad"></i> Log Meal',`
+    <div class="input-group"><label>Food Name</label><input type="text" id="m-food" placeholder="e.g. Chicken & Rice, Greek Yogurt…"></div>
+    <div class="input-group"><label>Meal</label><select id="m-mealtype"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select></div>
+    <div class="input-group"><label>Calories (kcal)</label><input type="number" id="m-cals" placeholder="0" min="0"></div>
+    <div class="input-group"><label>Protein (g)</label><input type="number" id="m-prot" placeholder="0" min="0"></div>
+    <div class="input-group"><label>Carbs (g)</label><input type="number" id="m-carbs" placeholder="0" min="0"></div>
+    <div class="input-group"><label>Fat (g)</label><input type="number" id="m-fatg" placeholder="0" min="0"></div>
+  `, () => {
+    const name=document.getElementById('m-food').value.trim();
+    if(!name) return;
+    S.meals.push({id:Date.now(),name,meal:document.getElementById('m-mealtype').value,
+      cals:parseInt(document.getElementById('m-cals').value)||0,
+      protein:parseInt(document.getElementById('m-prot').value)||0,
+      carbs:parseInt(document.getElementById('m-carbs').value)||0,
+      fat:parseInt(document.getElementById('m-fatg').value)||0});
+    saveState(); renderMeals(); updateDailyScore(); updateCharts();
+  });
+}
+
+function openNutritionGoals() {
+  const g = S.nutGoals;
+  openModal('<i class="ti ti-target"></i> Set Nutrition Goals',`
+    <div class="input-group"><label>Daily Calories</label><input type="number" id="m-gcals" value="${g.cals}" min="0"></div>
+    <div class="input-group"><label>Protein Goal (g)</label><input type="number" id="m-gprot" value="${g.protein}" min="0"></div>
+    <div class="input-group"><label>Carbs Goal (g)</label><input type="number" id="m-gcarbs" value="${g.carbs}" min="0"></div>
+    <div class="input-group"><label>Fat Goal (g)</label><input type="number" id="m-gfat" value="${g.fat}" min="0"></div>
+  `, () => {
+    S.nutGoals = {
+      cals:parseInt(document.getElementById('m-gcals').value)||2000,
+      protein:parseInt(document.getElementById('m-gprot').value)||150,
+      carbs:parseInt(document.getElementById('m-gcarbs').value)||200,
+      fat:parseInt(document.getElementById('m-gfat').value)||65,
+    };
+    saveState(); updateNutritionTotals(); buildMacroChart();
+  });
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function init() {
+  checkDailyReset();
+  updateClock(); setInterval(updateClock, 1000);
+  document.getElementById('quoteBox').textContent = QUOTES[new Date().getDay() % QUOTES.length];
+  document.getElementById('greetingName').textContent = S.name;
+  document.getElementById('pomoCount').textContent = S.pomoCount;
+  renderPhoto();
+  renderPriorities();
+  renderTransactions();
+  renderBudgets();
+  renderHabits();
+  renderTasks();
+  renderMeals();
+  renderGoals();
+  renderNotes();
+  updateFinanceTotals();
+  updateNutritionTotals();
+  updateDailyScore();
+  applyLock();
+  updatePomoDisplay();
+  initCharts();
+  // Water display
+  const wc=document.getElementById('waterCount'); if(wc) wc.textContent=`${S.waterCups} / 8 cups`;
+  const wb=document.getElementById('waterBar'); if(wb) wb.style.width=Math.min(100,Math.round(S.waterCups/8*100))+'%';
+}
+
+init();
+</script>
+</body>
+</html>
