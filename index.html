@@ -186,6 +186,34 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
 .save-indicator{position:fixed;bottom:20px;right:20px;background:var(--green);color:#000;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
 .save-indicator.show{opacity:1}
 
+/* CALENDAR */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
+.cal-day-header{text-align:center;font-size:11px;color:var(--text2);font-weight:600;padding:6px 0;text-transform:uppercase;letter-spacing:.04em}
+.cal-day{min-height:72px;background:var(--bg3);border-radius:8px;padding:6px;border:1px solid var(--border);cursor:pointer;transition:border .2s;position:relative}
+.cal-day:hover{border-color:var(--accent)}
+.cal-day.today{border-color:var(--accent);background:rgba(108,99,255,.08)}
+.cal-day.other-month{opacity:.35}
+.cal-day-num{font-size:12px;font-weight:600;margin-bottom:4px}
+.cal-event-dot{font-size:10px;padding:2px 5px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.cal-event-dot.apple{background:rgba(56,189,248,.2);color:var(--blue)}
+.cal-event-dot.manual{background:rgba(108,99,255,.2);color:var(--accent)}
+.event-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.event-item:last-child{border-bottom:none}
+.event-time{font-size:11px;font-family:'JetBrains Mono';color:var(--text2);white-space:nowrap;padding-top:2px;min-width:70px}
+.event-title{font-size:13px;font-weight:500;flex:1}
+.event-cal{font-size:10px;padding:2px 8px;border-radius:20px;margin-top:3px;display:inline-block}
+.event-cal.apple{background:rgba(56,189,248,.15);color:var(--blue)}
+.event-cal.manual{background:rgba(108,99,255,.15);color:var(--accent)}
+.event-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;opacity:.4;padding:2px}
+.event-del:hover{opacity:1;color:var(--red)}
+.sync-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.sync-dot.stale{background:var(--amber)}
+.shortcut-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.shortcut-step:last-child{border-bottom:none}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.code-block{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:'JetBrains Mono';font-size:11px;color:var(--green);margin:8px 0;word-break:break-all;line-height:1.6}
+
 /* AI ASSISTANT */
 .ai-chat{display:flex;flex-direction:column;height:520px}
 .ai-messages{flex:1;overflow-y:auto;padding:4px 0;display:flex;flex-direction:column;gap:12px}
@@ -219,6 +247,7 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
   <button class="tab" onclick="showPage('tasks',this)"><i class="ti ti-checklist"></i>Tasks</button>
   <button class="tab" onclick="showPage('notes',this)"><i class="ti ti-notes"></i>Notes</button>
   <button class="tab" onclick="showPage('ai',this)"><i class="ti ti-sparkles"></i>AI Assistant</button>
+  <button class="tab" onclick="showPage('calendar',this)"><i class="ti ti-calendar"></i>Calendar</button>
   <div class="nav-right">
     <button class="lock-btn" id="lockBtn" onclick="toggleLock()"><i class="ti ti-lock-open" id="lockIcon"></i><span id="lockText">Lock Finance</span></button>
   </div>
@@ -338,6 +367,12 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
         <div class="card-header"><span class="card-title">Quick Capture</span></div>
         <textarea class="note-input" id="quickNote" placeholder="Brain dump anything…"></textarea>
         <button class="btn btn-primary" style="width:100%;margin-top:8px;font-size:12px" onclick="saveQuickNote()">Save Note</button>
+      </div>
+
+      <!-- Today's Calendar -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Today's Schedule</span><button class="card-action" onclick="showPage('calendar',document.querySelectorAll('.tab')[7])">All →</button></div>
+        <div id="homeCalendar"><div style="color:var(--text2);font-size:12px;padding:8px 0">Sync calendar to see events</div></div>
       </div>
     </div>
   </div>
@@ -464,6 +499,94 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
     <div class="card">
       <div class="card-header"><span class="card-title">Saved Notes</span></div>
       <div id="notesList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div id="page-calendar" class="page">
+  <div class="section-header">
+    <h2>Calendar</h2>
+    <span class="badge" id="calMonthLabel">—</span>
+    <div class="sync-status" style="margin-left:auto">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">Loading…</span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 12px;margin-left:4px" onclick="syncCalendar()"><i class="ti ti-refresh"></i> Sync</button>
+    </div>
+  </div>
+
+  <div class="grid-2" style="align-items:start;margin-bottom:16px">
+    <!-- Calendar grid -->
+    <div class="card">
+      <div class="card-header">
+        <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" onclick="changeCalMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="card-title" id="calGridTitle">—</span>
+        <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" onclick="changeCalMonth(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid" id="calDayHeaders"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- Upcoming events -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Upcoming Events</span>
+        <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddEvent()">+ Add Event</button>
+      </div>
+      <div id="upcomingEvents"></div>
+    </div>
+  </div>
+
+  <!-- Selected day events -->
+  <div class="grid-2" style="align-items:start">
+    <div class="card">
+      <div class="card-header"><span class="card-title" id="selectedDayTitle">Today's Events</span></div>
+      <div id="selectedDayEvents"><div style="color:var(--text2);font-size:13px;padding:12px 0;text-align:center">Click a day to see events</div></div>
+    </div>
+
+    <!-- Shortcut setup guide -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">📱 iPhone Sync Setup</span></div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Install this Apple Shortcut to automatically push your Apple Calendar events into APEX OS. Run it anytime to sync.</p>
+      <div id="shortcutSteps">
+        <div class="shortcut-step">
+          <div class="step-num">1</div>
+          <div><strong>Open Shortcuts app</strong> on your iPhone and tap <strong>+</strong> to create a new shortcut.</div>
+        </div>
+        <div class="shortcut-step">
+          <div class="step-num">2</div>
+          <div>Add action: <strong>"Find Calendar Events"</strong> — set date range to "Next 30 days", include all calendars.</div>
+        </div>
+        <div class="shortcut-step">
+          <div class="step-num">3</div>
+          <div>Add action: <strong>"Repeat with each"</strong> item in Calendar Events.</div>
+        </div>
+        <div class="shortcut-step">
+          <div class="step-num">4</div>
+          <div>Inside the repeat, add action: <strong>"Get Details of Calendar Events"</strong> — get Title, Start Date, End Date, Notes, Location, Is All Day.</div>
+        </div>
+        <div class="shortcut-step">
+          <div class="step-num">5</div>
+          <div>Add action: <strong>"URL"</strong> and paste your Supabase URL:
+            <div class="code-block">https://eeeuhwwuwjpfhuirtkok.supabase.co/rest/v1/apex_calendar</div>
+          </div>
+        </div>
+        <div class="shortcut-step">
+          <div class="step-num">6</div>
+          <div>Add action: <strong>"Get Contents of URL"</strong> — set method to <strong>POST</strong>, headers:
+            <div class="code-block">apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlZXVod3d1d2pwZmh1aXJ0a29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTY2MzQsImV4cCI6MjA5NTQ3MjYzNH0.kstVkNqGOXTEv2m7M-F4T8dxfR6ZQ0wXrWAGNIOTJvY
+Authorization: Bearer [same key]
+Content-Type: application/json
+Prefer: resolution=merge-duplicates</div>
+            Body (JSON): <code style="color:var(--accent)">{"id":"[Event ID]","title":"[Title]","start_time":"[Start Date]","end_time":"[End Date]","notes":"[Notes]","location":"[Location]","all_day":[Is All Day],"source":"apple"}</code>
+          </div>
+        </div>
+        <div class="shortcut-step">
+          <div class="step-num">7</div>
+          <div>Name the shortcut <strong>"Sync to APEX OS"</strong> and add it to your home screen. Tap it anytime to sync!</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="syncCalendar()"><i class="ti ti-refresh"></i> Pull Latest from Supabase</button>
     </div>
   </div>
 </div>
@@ -1310,6 +1433,220 @@ function openNutritionGoals() {
 }
 
 // ══════════════════════════════════════════
+//  CALENDAR
+// ══════════════════════════════════════════
+let calEvents = [];
+let calViewDate = new Date();
+let selectedDay = null;
+
+async function syncCalendar() {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  if (dot) dot.className = 'sync-dot stale';
+  if (lbl) lbl.textContent = 'Syncing…';
+
+  try {
+    const { data, error } = await sb.from('apex_calendar')
+      .select('*')
+      .order('start_time', { ascending: true });
+
+    if (error) throw error;
+    calEvents = data || [];
+    if (dot) dot.className = 'sync-dot';
+    if (lbl) lbl.textContent = `Synced · ${calEvents.length} events`;
+    renderCalendar();
+    renderUpcoming();
+  } catch(e) {
+    if (dot) dot.className = 'sync-dot stale';
+    if (lbl) lbl.textContent = 'Sync failed';
+  }
+}
+
+function renderCalendar() {
+  const now = new Date();
+  const y = calViewDate.getFullYear();
+  const m = calViewDate.getMonth();
+
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const title = document.getElementById('calGridTitle');
+  if (title) title.textContent = `${monthNames[m]} ${y}`;
+  const label = document.getElementById('calMonthLabel');
+  if (label) label.textContent = `${monthNames[m]} ${y}`;
+
+  // Day headers
+  const headers = document.getElementById('calDayHeaders');
+  if (headers) headers.innerHTML = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d =>
+    `<div class="cal-day-header">${d}</div>`).join('');
+
+  // Build grid
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const daysInPrev = new Date(y, m, 0).getDate();
+
+  const grid = document.getElementById('calGrid');
+  if (!grid) return;
+
+  let cells = '';
+  // Prev month padding
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const d = daysInPrev - i;
+    cells += `<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;
+  }
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const dateStr = date.toISOString().split('T')[0];
+    const isToday = date.toDateString() === now.toDateString();
+    const isSelected = selectedDay === dateStr;
+    const dayEvents = calEvents.filter(e => {
+      if (!e.start_time) return false;
+      return new Date(e.start_time).toISOString().split('T')[0] === dateStr;
+    });
+    const eventDots = dayEvents.slice(0,3).map(e =>
+      `<div class="cal-event-dot ${e.source||'manual'}">${e.title}</div>`).join('');
+    cells += `<div class="cal-day${isToday?' today':''}${isSelected?' today':''}" onclick="selectDay('${dateStr}')">
+      <div class="cal-day-num">${d}</div>
+      ${eventDots}
+      ${dayEvents.length > 3 ? `<div style="font-size:10px;color:var(--text2)">+${dayEvents.length-3} more</div>` : ''}
+    </div>`;
+  }
+  // Next month padding
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+  for (let d = 1; d <= totalCells - firstDay - daysInMonth; d++) {
+    cells += `<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;
+  }
+  grid.innerHTML = cells;
+
+  // Also update home schedule widget
+  renderHomeCalendar();
+}
+
+function selectDay(dateStr) {
+  selectedDay = dateStr;
+  const date = new Date(dateStr + 'T12:00:00');
+  const opts = { weekday:'long', month:'long', day:'numeric' };
+  const title = document.getElementById('selectedDayTitle');
+  if (title) title.textContent = date.toLocaleDateString('en-US', opts);
+
+  const dayEvents = calEvents.filter(e => {
+    if (!e.start_time) return false;
+    return new Date(e.start_time).toISOString().split('T')[0] === dateStr;
+  });
+
+  const el = document.getElementById('selectedDayEvents');
+  if (!el) return;
+  if (!dayEvents.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:12px 0;text-align:center">No events this day</div>';
+  } else {
+    el.innerHTML = dayEvents.map(e => eventHTML(e)).join('');
+  }
+  renderCalendar();
+}
+
+function renderUpcoming() {
+  const el = document.getElementById('upcomingEvents');
+  if (!el) return;
+  const now = new Date();
+  const upcoming = calEvents
+    .filter(e => e.start_time && new Date(e.start_time) >= now)
+    .slice(0, 12);
+  if (!upcoming.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:12px 0;text-align:center">No upcoming events — sync from iPhone or add manually</div>';
+    return;
+  }
+  el.innerHTML = upcoming.map(e => eventHTML(e)).join('');
+}
+
+function eventHTML(e) {
+  const start = e.start_time ? new Date(e.start_time) : null;
+  const timeStr = e.all_day ? 'All day' : start ? start.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—';
+  const dateStr = start ? start.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+  return `<div class="event-item">
+    <div class="event-time">${dateStr}<br>${timeStr}</div>
+    <div style="flex:1">
+      <div class="event-title">${e.title}</div>
+      ${e.location ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">📍 ${e.location}</div>` : ''}
+      ${e.notes ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">${e.notes.substring(0,60)}${e.notes.length>60?'…':''}</div>` : ''}
+      <span class="event-cal ${e.source||'manual'}">${e.source==='apple'?'🍎 Apple Calendar':'📌 Manual'}</span>
+    </div>
+    <button class="event-del" onclick="deleteEvent('${e.id}')"><i class="ti ti-x"></i></button>
+  </div>`;
+}
+
+function changeCalMonth(delta) {
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + delta, 1);
+  renderCalendar();
+}
+
+async function deleteEvent(id) {
+  try {
+    await sb.from('apex_calendar').delete().eq('id', id);
+    calEvents = calEvents.filter(e => e.id !== id);
+    renderCalendar();
+    renderUpcoming();
+    if (selectedDay) selectDay(selectedDay);
+  } catch(e) {}
+}
+
+function renderHomeCalendar() {
+  const el = document.getElementById('homeCalendar');
+  if (!el) return;
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const todayEvents = calEvents.filter(e => {
+    if (!e.start_time) return false;
+    return new Date(e.start_time).toISOString().split('T')[0] === today;
+  });
+  if (!todayEvents.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px 0">No events today</div>';
+    return;
+  }
+  el.innerHTML = todayEvents.map(e => {
+    const t = e.all_day ? 'All day' : new Date(e.start_time).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    return `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span class="mono" style="color:var(--text2);font-size:11px;min-width:55px">${t}</span>
+      <span style="flex:1">${e.title}</span>
+    </div>`;
+  }).join('');
+}
+
+function openAddEvent() {
+  openModal('<i class="ti ti-calendar-plus"></i> Add Event', `
+    <div class="input-group"><label>Title</label><input type="text" id="m-etitle" placeholder="Event title…"></div>
+    <div class="input-group"><label>Date</label><input type="date" id="m-edate" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="input-group"><label>Start Time</label><input type="time" id="m-estart" value="09:00"></div>
+    <div class="input-group"><label>End Time</label><input type="time" id="m-eend" value="10:00"></div>
+    <div class="input-group"><label>Location</label><input type="text" id="m-eloc" placeholder="Optional location…"></div>
+    <div class="input-group"><label>Notes</label><textarea id="m-enotes" placeholder="Optional notes…" style="min-height:60px"></textarea></div>
+  `, async () => {
+    const title = document.getElementById('m-etitle').value.trim();
+    const date = document.getElementById('m-edate').value;
+    const start = document.getElementById('m-estart').value;
+    const end = document.getElementById('m-eend').value;
+    const loc = document.getElementById('m-eloc').value;
+    const notes = document.getElementById('m-enotes').value;
+    if (!title || !date) return;
+    const id = 'manual_' + Date.now();
+    const event = {
+      id, title,
+      start_time: `${date}T${start}:00`,
+      end_time: `${date}T${end}:00`,
+      location: loc, notes,
+      all_day: false, source: 'manual'
+    };
+    try {
+      await sb.from('apex_calendar').upsert(event);
+      calEvents.push(event);
+      calEvents.sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
+      renderCalendar();
+      renderUpcoming();
+    } catch(e) {
+      alert('Could not save event: ' + e.message);
+    }
+  });
+}
+
+// ══════════════════════════════════════════
 //  AI ASSISTANT
 // ══════════════════════════════════════════
 const AI_ENDPOINT = '/api/chat';
@@ -1494,6 +1831,11 @@ function init() {
   const wb=document.getElementById('waterBar'); if(wb) wb.style.width=Math.min(100,Math.round(S.waterCups/8*100))+'%';
   // Pull latest from cloud in background — updates UI if cloud is newer
   loadStateFromCloud();
+  // Load calendar from Supabase
+  syncCalendar();
+  // Init calendar view
+  calViewDate = new Date();
+  renderCalendar();
 }
 
 init();
