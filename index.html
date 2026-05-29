@@ -186,7 +186,20 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
 .save-indicator{position:fixed;bottom:20px;right:20px;background:var(--green);color:#000;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
 .save-indicator.show{opacity:1}
 
-/* CALENDAR */
+/* PHOTO MEAL ANALYZER */
+.photo-drop{border:2px dashed var(--border2);border-radius:var(--r2);padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.photo-drop:hover{border-color:var(--accent);background:rgba(108,99,255,.04)}
+.photo-drop.has-image{border-color:var(--green);padding:0}
+.photo-drop img{width:100%;max-height:280px;object-fit:cover;border-radius:calc(var(--r2) - 2px);display:block}
+.photo-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.photo-actions{display:flex;gap:8px;margin-top:10px}
+.analyzing-overlay{position:absolute;inset:0;background:rgba(10,10,15,.8);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;border-radius:calc(var(--r2) - 2px)}
+.analyzing-spinner{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.confidence-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.confidence-high{background:rgba(34,211,160,.15);color:var(--green)}
+.confidence-medium{background:rgba(245,158,11,.15);color:var(--amber)}
+.confidence-low{background:rgba(248,113,113,.15);color:var(--red)}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
 .cal-day-header{text-align:center;font-size:11px;color:var(--text2);font-weight:600;padding:6px 0;text-transform:uppercase;letter-spacing:.04em}
 .cal-day{min-height:72px;background:var(--bg3);border-radius:8px;padding:6px;border:1px solid var(--border);cursor:pointer;transition:border .2s;position:relative}
@@ -448,7 +461,12 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
   </div>
   <div class="grid-2">
     <div class="card">
-      <div class="card-header"><span class="card-title">Today's Meals</span><button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddMeal()">+ Log Meal</button></div>
+      <div class="card-header"><span class="card-title">Today's Meals</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="openPhotoMeal()"><i class="ti ti-camera"></i> Photo</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="openAddMeal()">+ Manual</button>
+        </div>
+      </div>
       <div id="mealList"></div>
     </div>
     <div class="card">
@@ -1430,6 +1448,175 @@ function openNutritionGoals() {
     };
     saveState(); updateNutritionTotals(); buildMacroChart();
   });
+}
+
+// ══════════════════════════════════════════
+//  AI FOOD PHOTO ANALYZER
+// ══════════════════════════════════════════
+let photoMealData = null;
+
+function openPhotoMeal() {
+  openModal('<i class="ti ti-camera"></i> AI Food Photo',`
+    <div class="photo-drop" id="photoDrop" onclick="document.getElementById('foodPhotoInput').click()">
+      <input type="file" id="foodPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleFoodPhoto(event)">
+      <div id="photoDropInner">
+        <i class="ti ti-photo" style="font-size:36px;color:var(--text2);margin-bottom:8px;display:block"></i>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">Tap to take photo or choose from library</div>
+        <div style="font-size:12px;color:var(--text2)">AI will identify the food and estimate nutrition</div>
+      </div>
+    </div>
+    <div class="photo-actions">
+      <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="document.getElementById('foodPhotoInput').click()"><i class="ti ti-camera"></i> Camera</button>
+      <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="openGallery()"><i class="ti ti-photo"></i> Library</button>
+    </div>
+
+    <div id="aiNutritionResult" style="display:none;margin-top:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:600">AI Estimate</div>
+        <div id="confidenceBadge" class="confidence-badge confidence-medium">Medium confidence</div>
+      </div>
+      <div id="aiNotes" style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5;font-style:italic"></div>
+
+      <div class="input-group"><label>Food Name</label><input type="text" id="pf-name" placeholder="Food name…"></div>
+      <div class="input-group"><label>Meal</label>
+        <select id="pf-meal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="input-group"><label>Calories</label><input type="number" id="pf-cals" placeholder="0"></div>
+        <div class="input-group"><label>Protein (g)</label><input type="number" id="pf-protein" placeholder="0"></div>
+        <div class="input-group"><label>Carbs (g)</label><input type="number" id="pf-carbs" placeholder="0"></div>
+        <div class="input-group"><label>Fat (g)</label><input type="number" id="pf-fat" placeholder="0"></div>
+      </div>
+      <div class="input-group"><label>Additional Notes</label><textarea id="pf-notes" placeholder="Add any details — ingredients, portion size, how it was cooked…" style="min-height:70px"></textarea></div>
+    </div>
+  `, () => {
+    // Save the meal
+    const name = document.getElementById('pf-name')?.value?.trim();
+    if (!name) return;
+    S.meals.push({
+      id: Date.now(),
+      name,
+      meal: document.getElementById('pf-meal').value,
+      cals: parseInt(document.getElementById('pf-cals').value) || 0,
+      protein: parseInt(document.getElementById('pf-protein').value) || 0,
+      carbs: parseInt(document.getElementById('pf-carbs').value) || 0,
+      fat: parseInt(document.getElementById('pf-fat').value) || 0,
+    });
+    saveState(); renderMeals(); updateDailyScore(); updateCharts();
+  });
+
+  // Hide the save button until AI result is ready
+  const submitBtn = document.getElementById('modalSubmit');
+  if (submitBtn) submitBtn.style.display = 'none';
+}
+
+function openGallery() {
+  // Create a file input without capture to open gallery
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = handleFoodPhoto;
+  input.click();
+}
+
+async function handleFoodPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Show image preview
+  const drop = document.getElementById('photoDrop');
+  const reader = new FileReader();
+
+  reader.onload = async (e) => {
+    const base64Full = e.target.result;
+    const base64Data = base64Full.split(',')[1];
+    const imageType = file.type || 'image/jpeg';
+
+    // Show preview with analyzing overlay
+    if (drop) {
+      drop.classList.add('has-image');
+      drop.innerHTML = `
+        <img src="${base64Full}" alt="Food photo">
+        <div class="analyzing-overlay" id="analyzingOverlay">
+          <div class="analyzing-spinner"></div>
+          <div style="font-size:13px;color:var(--text2)">Analyzing your meal…</div>
+        </div>`;
+    }
+
+    try {
+      const res = await fetch(AI_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'food_analysis',
+          imageBase64: base64Data,
+          imageType,
+        }),
+      });
+
+      const data = await res.json();
+
+      // Remove analyzing overlay
+      const overlay = document.getElementById('analyzingOverlay');
+      if (overlay) overlay.remove();
+
+      if (data.food) {
+        const food = data.food;
+        photoMealData = food;
+
+        // Fill in the form
+        const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+        setVal('pf-name', food.name || '');
+        setVal('pf-cals', food.calories || 0);
+        setVal('pf-protein', food.protein || 0);
+        setVal('pf-carbs', food.carbs || 0);
+        setVal('pf-fat', food.fat || 0);
+
+        // Set meal type
+        const mealSelect = document.getElementById('pf-meal');
+        if (mealSelect && food.meal) mealSelect.value = food.meal;
+
+        // Show confidence badge
+        const badge = document.getElementById('confidenceBadge');
+        if (badge) {
+          const conf = food.confidence || 'medium';
+          badge.className = `confidence-badge confidence-${conf}`;
+          badge.textContent = conf.charAt(0).toUpperCase() + conf.slice(1) + ' confidence';
+        }
+
+        // Show AI notes
+        const notesEl = document.getElementById('aiNotes');
+        if (notesEl && food.notes) notesEl.textContent = '💡 ' + food.notes;
+
+        // Show the result section
+        const result = document.getElementById('aiNutritionResult');
+        if (result) result.style.display = 'block';
+
+        // Show save button
+        const submitBtn = document.getElementById('modalSubmit');
+        if (submitBtn) submitBtn.style.display = 'block';
+
+      } else {
+        // AI couldn't analyze — show empty form so user can fill manually
+        const result = document.getElementById('aiNutritionResult');
+        if (result) result.style.display = 'block';
+        const notesEl = document.getElementById('aiNotes');
+        if (notesEl) notesEl.textContent = '⚠️ Could not identify food automatically — please fill in the details manually.';
+        const submitBtn = document.getElementById('modalSubmit');
+        if (submitBtn) submitBtn.style.display = 'block';
+      }
+
+    } catch(err) {
+      const overlay = document.getElementById('analyzingOverlay');
+      if (overlay) overlay.innerHTML = `<div style="font-size:13px;color:var(--red)">Analysis failed — check connection</div>`;
+      const result = document.getElementById('aiNutritionResult');
+      if (result) result.style.display = 'block';
+      const submitBtn = document.getElementById('modalSubmit');
+      if (submitBtn) submitBtn.style.display = 'block';
+    }
+  };
+
+  reader.readAsDataURL(file);
 }
 
 // ══════════════════════════════════════════
