@@ -481,9 +481,15 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
       </div>
     </div>
   </div>
-</div>
 
-<!-- TASKS -->
+  <!-- Meal History -->
+  <div style="margin-top:16px">
+    <div class="section-header"><h2 style="font-size:16px">Meal History</h2><button class="card-action" onclick="loadMealHistory()"><i class="ti ti-refresh"></i> Load History</button></div>
+    <div class="card">
+      <div id="mealHistoryList"><div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">Click "Load History" to see past days</div></div>
+    </div>
+  </div>
+</div>
 <div id="page-tasks" class="page">
   <div class="section-header"><h2>Tasks & Projects</h2></div>
   <div class="grid-3">
@@ -812,9 +818,28 @@ function renderAll() {
 }
 
 // Auto-reset habits daily
-function checkDailyReset() {
+async function checkDailyReset() {
   const today = new Date().toDateString();
   if (S.lastResetDate !== today) {
+    // Save yesterday's meals to Supabase before clearing
+    if (S.meals && S.meals.length > 0) {
+      const yesterday = S.lastResetDate || new Date(Date.now() - 86400000).toDateString();
+      const totals = {
+        cals: S.meals.reduce((a,m) => a+Number(m.cals), 0),
+        protein: S.meals.reduce((a,m) => a+Number(m.protein), 0),
+        carbs: S.meals.reduce((a,m) => a+Number(m.carbs), 0),
+        fat: S.meals.reduce((a,m) => a+Number(m.fat), 0),
+        water: S.waterCups,
+      };
+      try {
+        await sb.from('apex_meal_history').upsert({
+          id: yesterday.replace(/ /g, '_'),
+          date: yesterday,
+          meals: S.meals,
+          totals,
+        });
+      } catch(e) { console.log('Could not save meal history', e); }
+    }
     // Push yesterday's habit count to history
     const doneCnt = S.habits.filter(h => h.done).length;
     S.habitHistory.push([doneCnt]);
@@ -1448,6 +1473,69 @@ function openNutritionGoals() {
     };
     saveState(); updateNutritionTotals(); buildMacroChart();
   });
+}
+
+// ══════════════════════════════════════════
+//  MEAL HISTORY
+// ══════════════════════════════════════════
+async function loadMealHistory() {
+  const el = document.getElementById('mealHistoryList');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">Loading…</div>';
+
+  try {
+    const { data, error } = await sb.from('apex_meal_history')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(30);
+
+    if (error) throw error;
+
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:16px 0;text-align:center">No meal history yet — past days will appear here automatically</div>';
+      return;
+    }
+
+    el.innerHTML = data.map(day => {
+      const totals = day.totals || {};
+      const meals = day.meals || [];
+      const date = new Date(day.date);
+      const dateStr = isNaN(date) ? day.date : date.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+      const calPct = Math.min(100, Math.round((totals.cals || 0) / S.nutGoals.cals * 100));
+      const pPct = Math.min(100, Math.round((totals.protein || 0) / S.nutGoals.protein * 100));
+
+      return `<div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:600;font-size:14px">${dateStr}</div>
+          <div style="display:flex;gap:12px;font-size:12px;font-family:'JetBrains Mono'">
+            <span class="amber">${totals.cals || 0} kcal</span>
+            <span class="green">${totals.protein || 0}g protein</span>
+            <span class="blue">${totals.water || 0} cups</span>
+          </div>
+        </div>
+        <div class="prog-wrap" style="margin-bottom:6px">
+          <div class="prog-label"><span>Calories</span><span>${totals.cals || 0} / ${S.nutGoals.cals}</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${calPct}%;background:var(--amber)"></div></div>
+        </div>
+        <div class="prog-wrap" style="margin-bottom:10px">
+          <div class="prog-label"><span>Protein</span><span>${totals.protein || 0}g / ${S.nutGoals.protein}g</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${pPct}%;background:var(--green)"></div></div>
+        </div>
+        <details style="font-size:12px;color:var(--text2)">
+          <summary style="cursor:pointer;color:var(--accent);font-size:12px">${meals.length} meals logged — tap to expand</summary>
+          <div style="margin-top:8px">
+            ${meals.map(m => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
+              <span>${m.name} <span style="opacity:.6">(${m.meal})</span></span>
+              <span class="mono">${m.cals} kcal · P:${m.protein}g</span>
+            </div>`).join('')}
+          </div>
+        </details>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);font-size:13px;padding:16px 0;text-align:center">Could not load history — check connection</div>';
+  }
 }
 
 // ══════════════════════════════════════════
